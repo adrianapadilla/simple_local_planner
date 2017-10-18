@@ -25,6 +25,9 @@ namespace simple_local_planner{
 		// check if the plugin is already initialized
 		if(!initialized_)
 		{
+
+		beginning2 = ros::Time::now().toSec();
+
 		// copy adress of costmap and Transform Listener (handed over from move_base)
 		costmap_ros_ = costmap_ros;
 		tf_ = tf;
@@ -33,7 +36,43 @@ namespace simple_local_planner{
 		// subscribe to topics (to get odometry information, we need to get a handle to the topic in the global namespace)
 		ros::NodeHandle gn;
 		amcl_sub = gn.subscribe("amcl_pose", 100, &SimplePlannerROS::amclCallback, this);
+        	path_pub = gn.advertise<visualization_msgs::Marker>("visualization_marker", 10);
 
+		//initializing the visualization markers
+		points.header.frame_id = "/map";
+	 
+		points.header.stamp = ros::Time::now();
+	 
+		points.ns = "path_drawing";
+	 
+		points.action = visualization_msgs::Marker::ADD;
+	 
+		points.id = 0;
+	 
+		//points.pose.position.x = now.x;
+		//points.pose.position.y = now.y;
+		//points.pose.position.z = 0.5;
+	 
+		points.type = visualization_msgs::Marker::POINTS;
+	 
+		points.scale.x = 0.1;
+		points.scale.y = 0.1;
+	 
+		points.color.g = 1.0f;
+		points.color.a = 1.0;
+
+		average = 0;
+		num = 0;
+		firstTime = 1;
+		number1 = 1;
+		hasStarted = 0;
+                pathLength = 0;
+		p = 0;
+		minus = 0;
+		//beforee = ros::Time::now().toSec();
+
+		//open file
+		file.open("/home/adriana/adrianaTFG/simple_cs/simple_cs_10.txt", ios::out);
 		// set initialized flag
 		initialized_ = true;
 
@@ -57,6 +96,7 @@ namespace simple_local_planner{
 		return false;
 		}
 
+
 		//reset next counter
 		count = 1; 
 
@@ -64,6 +104,26 @@ namespace simple_local_planner{
 		plan = orig_global_plan; 
 		length = (plan).size();  
 		setNext(); 
+
+		ending2 = ros::Time::now().toSec();
+		//ROS_INFO("between: %f", (ros::Time::now().toSec()-beforee)/2);
+		//average += (ros::Time::now().toSec()-beforee);
+		//num++;
+
+		if(number1){
+			four = ros::Time::now().toSec()-beginning2;
+			number1 = 0;
+		}
+		ROS_INFO("minus: %f", (minus));
+		ROS_INFO("four: %f", (four));
+		ROS_INFO("between2: %f", (ending2-beginning2-minus-four));
+		average += 0.05;//(ending2-beginning2-minus-four);
+		//num++;
+
+		p++;
+		minus = p;//0.2*p;
+
+		//beforee = ros::Time::now().toSec(); 
 
 		// set goal as not reached
 		goal_reached_ = false;
@@ -82,7 +142,15 @@ namespace simple_local_planner{
 		return false;
 		}
 
+
 		if(length != 0){ 
+
+			if(firstTime){
+				startTime = ros::Time::now().toSec();
+				firstTime = 0;
+			}
+
+			double beginning = ros::Time::now().toSec();
 
 			setNowError();
 
@@ -98,7 +166,25 @@ namespace simple_local_planner{
 					}
 					setNext();
 				}else{
-	
+
+					stopTime = ros::Time::now().toSec();
+					
+					//time to reach goal
+					ROS_INFO("journey duration: %f", (stopTime-startTime));
+
+					//path length
+					ROS_INFO("path length: %f", pathLength);
+
+					//average executation time (for computational cost)
+					ROS_INFO("avrg exec time: %f", average/num);
+
+					if(file.is_open()){
+						ROS_INFO("I'm OPEN!");
+						//file.close();
+					}else{
+						ROS_INFO("I'm NOT open!");
+					}
+
 					setVelZ();
 					goal_reached_ = true;
 
@@ -120,10 +206,15 @@ namespace simple_local_planner{
 			}
 
 
+			double ending = ros::Time::now().toSec();
+			average += (ending-beginning);
+			num++;
+			//ROS_INFO("avrg exec time: %f", average/num);
 		}
 
 		// set retrieved commands to reference variable
 		ROS_DEBUG("Retrieving velocity command: (%f, %f, %f)", cmd.linear.x, cmd.linear.y, cmd.angular.z);
+		file << cmd.linear.x << " "<< cmd.linear.y << " "<< cmd.angular.z << endl;
 		cmd_vel = cmd;  
 
 		return true;
@@ -149,10 +240,25 @@ namespace simple_local_planner{
 
 		ROS_INFO("Seq: [%d]", msg->header.seq);
 
+		pos before;
+		if(hasStarted){
+			before.x = now.x;
+			before.y = now.y;
+		}
+
 		now.x = msg->pose.pose.position.x;
 		now.y = msg->pose.pose.position.y;
 		now.az = getYaw(*msg); 
-		setNowError(); 
+		setNowError();
+
+		if(hasStarted){
+			pathLength += std::sqrt((now.x-before.x)*(now.x-before.x) + (now.y-before.y)*(now.y-before.y));
+			ROS_INFO("%f, %f, %f", stopTime, startTime, pathLength);
+		}
+
+		pathVisualization();
+		
+		hasStarted = 1;
 
 	}
 
@@ -252,6 +358,82 @@ namespace simple_local_planner{
 
 	}
 
+	void SimplePlannerROS::pathVisualization()
+	{
+	 
+	        geometry_msgs::Point p;
+ 
+	        p.x = now.x;
+	        p.y = now.y;
+	        p.z = 0.5;
+ 
+      	        points.points.push_back(p);
+   
+	     
+		path_pub.publish(points); 
+	 
+	 }
+
 
 
 }
+
+
+
+
+/*	void SimplePlannerROS::bubbleVisualization()
+	{
+		/////// Visualization in rviz
+	 
+		visualization_msgs::Marker points, line_strip;
+	 
+		points.header.frame_id = "/draw_bubble";
+		line_strip.header.frame_id = "/draw_bubble";
+	 
+		points.header.stamp = ros::Time::now();
+		line_strip.header.stamp = ros::Time::now();
+	 
+		points.ns = "bubble_drawing";
+		line_strip.ns = "bubble_drawing";
+	 
+		points.action = visualization_msgs::Marker::ADD;
+		line_strip.action = visualization_msgs::Marker::ADD;
+	 
+		points.id = 0;
+		line_strip.id = 1;
+	 
+		points.pose = poseNow;
+		line_strip.pose = poseNow;
+	 
+		points.type = visualization_msgs::Marker::POINTS;
+		line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+	 
+		//size of dots and lines
+		points.scale.x = 0.2;
+		points.scale.y = 0.2;
+		line_strip.scale.x = 0.1;
+	 
+		points.color.b = 1.0f;
+		points.color.a = 1.0;
+	 
+		line_strip.color.b = 1.0f;
+		line_strip.color.a = 1.0;
+	 
+		for(int j = 0; j<180; j++){
+	 
+		    geometry_msgs::Point p;
+	 
+		    p.x = std::cos(j*D2R)*bubble[j];
+		    p.y = std::sin(j*D2R)*bubble[j];
+		    p.z = 0;
+	 
+		    points.points[j] = p;
+		    line_strip.points[j] = p;
+	 
+		} 
+	     
+		bubble_pub.publish(points); 
+		bubble_pub.publish(line_strip);
+	 
+	 }
+*/
