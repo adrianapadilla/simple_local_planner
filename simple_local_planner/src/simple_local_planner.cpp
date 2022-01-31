@@ -5,7 +5,7 @@
 #include <pluginlib/class_list_macros.h>
 
 // PLUGINLIB_DECLARE_CLASS has been changed to PLUGINLIB_EXPORT_CLASS in ROS Noetic
-// Changing all tf2_ros::Buffer* to tf2_ros::Buffer*
+// Changing all tf::TransformListener* to tf2_ros::Buffer*
 PLUGINLIB_EXPORT_CLASS(simple_local_planner::SimplePlannerROS, nav_core::BaseLocalPlanner)
 
 namespace simple_local_planner{
