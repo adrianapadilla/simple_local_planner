@@ -30,6 +30,7 @@ using namespace std;
 #include <angles/angles.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+#include <tf2/utils.h>
 
 // costmap & geometry
 #include <costmap_2d/costmap_2d_ros.h>
@@ -74,7 +75,7 @@ namespace simple_local_planner{
        * @param tf A pointer to a transform listener
        * @param costmap The cost map to use for assigning costs to trajectories
        */
-      SimplePlannerROS(std::string name, tf::TransformListener* tf,
+      SimplePlannerROS(std::string name, tf2_ros::Buffer* tf,
           costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
@@ -88,7 +89,7 @@ namespace simple_local_planner{
        * @param tf A pointer to a transform listener
        * @param costmap The cost map to use for assigning costs to trajectories
        */
-      void initialize(std::string name, tf::TransformListener* tf,
+      void initialize(std::string name, tf2_ros::Buffer* tf,
           costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
@@ -115,7 +116,7 @@ namespace simple_local_planner{
 
       //Pointer to external objects (do NOT delete object)
       costmap_2d::Costmap2DROS* costmap_ros_; ///<@brief pointer to costmap  
-      tf::TransformListener* tf_; ///<@brief pointer to Transform Listener 
+      tf2_ros::Buffer* tf_; ///<@brief pointer to Transform Listener 
 
 
       // Topics & Services

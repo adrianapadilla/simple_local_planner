@@ -4,13 +4,15 @@
 // pluginlib macros (defines, ...)
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_DECLARE_CLASS(simple_local_planner, SimplePlannerROS, simple_local_planner::SimplePlannerROS, nav_core::BaseLocalPlanner)
+// PLUGINLIB_DECLARE_CLASS has been changed to PLUGINLIB_EXPORT_CLASS in ROS Noetic
+// Changing all tf::TransformListener* to tf2_ros::Buffer*
+PLUGINLIB_EXPORT_CLASS(simple_local_planner::SimplePlannerROS, nav_core::BaseLocalPlanner)
 
 namespace simple_local_planner{
 
 	SimplePlannerROS::SimplePlannerROS() : costmap_ros_(NULL), tf_(NULL), initialized_(false) {}
 
-	SimplePlannerROS::SimplePlannerROS(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros)
+	SimplePlannerROS::SimplePlannerROS(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros)
          : costmap_ros_(NULL), tf_(NULL), initialized_(false)
          {
 		// initialize planner
@@ -19,7 +21,7 @@ namespace simple_local_planner{
 
 	SimplePlannerROS::~SimplePlannerROS() {}
 
-	void SimplePlannerROS::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros)
+	void SimplePlannerROS::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros)
 	{
 
 		// check if the plugin is already initialized
